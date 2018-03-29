@@ -2,7 +2,7 @@
 """
 Created on Tue Mar 27 11:00:57 2018
 
-@author: hp
+
 """
 import keras
 from keras.models import Sequential
