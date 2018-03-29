@@ -27,8 +27,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import MinMaxScaler
 
 #Reading the files
-train = shuffle(pd.read_csv("C:/Users/thirumav/Desktop/Python_exercises/Human activity recognition/train.csv"))
-test = shuffle(pd.read_csv("C:/Users/thirumav/Desktop/Python_exercises/Human activity recognition/test.csv"))
+train = shuffle(pd.read_csv("E:/Python Exercises/Human activity recognition/train.csv"))
+test = shuffle(pd.read_csv("E:/Python Exercises/Human activity recognition/test.csv"))
 #Assigning Label fields
 train_labels = train["Activity"]
 test_labels = test["Activity"]
@@ -82,10 +82,10 @@ X_test = scaling.transform(test_data)
 grid=GridSearchCV(SVC(),param_grid,scoring="accuracy")
 grid.fit(X_train, train_label)
 print(grid.best_params_)
-grid_predictions = grid.predict(test_data, test_label)
+grid_predictions = grid.predict(test_data)
 score_SVM = metrics.accuracy_score(test_label, grid_predictions)
 print(classification_report(test_label, grid_predictions))
-print(metrics.accuracy_score(test_label, grid_predictions))
+print("Accuracy for Decision Tree: {:.3f}".format(metrics.accuracy_score(test_label, grid_predictions)))
 
 ###DECISION TREE
 from sklearn.tree import DecisionTreeClassifier
@@ -98,25 +98,25 @@ print("Accuracy for Decision Tree: {:.3f}".format(score_decision))
 gb = GradientBoostingClassifier(learning_rate = 0.01, max_depth=2, random_state=0)
 gb.fit(train_data, train_label)
 score_gbdt = gb.score(test_data,test_label)
-print('Accuracy of GBDT classifier on test set: {:.2f}'.format(score_gbdt))
+print('Accuracy of GBDT classifier on test set: {:.3f}'.format(score_gbdt))
 
 ###RANDOM FORESTS
 randomforest = RandomForestRegressor(n_estimators = 10, max_depth = 6, min_samples_leaf = 10, n_jobs = 4)
 randomforest.fit(train_data, train_label)
 score_rf = randomforest.score(test_data, test_label)
-print('Accuracy of Random Forest classifier on test set: {:.2f}'.format(score_rf))
+print('Accuracy of Random Forest classifier on test set: {:.3f}'.format(score_rf))
 
 ###LOGISTIC REGRESSION
 logistic = LogisticRegression(C=1)
 logistic.fit(train_data, train_label)
 score_logistic = logistic.score(test_data, test_label)
-print('Accuracy of Logistic Regression on test set: {:.2f}'.format(score_logistic))
+print('Accuracy of Logistic Regression on test set: {:.3f}'.format(score_logistic))
 
 ###GAUSSIAN NAIVE BAYES CLASSIFIER
 gaussian_nb = GaussianNB()
 gaussian_nb.fit(train_data, train_label)
 score_gaussian_nb = gaussian_nb.score(test_data, test_label)
-print('Accuracy of Gaussian Naive Bayes on test set: {:.2f}'.format(score_gaussian_nb))
+print('Accuracy of Gaussian Naive Bayes on test set: {:.3f}'.format(score_gaussian_nb))
 
 ###SINGLE LAYER PERCEPTRON
 score_single_MLP = []
@@ -132,7 +132,7 @@ print('Maximum accuracy of Single Layer Perceptron on test set: {:.3f}'.format(m
 MLP = MLPClassifier(hidden_layer_sizes = [10, 100], solver='lbfgs',random_state = 0)
 MLP.fit(train_data, train_label)        
 score_MLP = MLP.score(test_data, test_label) 
-print('Accuracy of Multiple Layer Perceptron on test set: {:.2f}'.format(score_MLP))
+print('Accuracy of Multiple Layer Perceptron on test set: {:.3f}'.format(score_MLP))
 
 ###CONSOLIDATED REPORT
 consolidated_score = [{'ALGORITHM': 'Keras Neural Network', 'SCORE': score_NN[1]},
@@ -148,4 +148,5 @@ consolidated_score = [{'ALGORITHM': 'Keras Neural Network', 'SCORE': score_NN[1]
 df = pd.DataFrame(consolidated_score)
 print(df)
 df['SCORE'].idxmax()
-df.loc[df['SCORE'].idxmax()]
+print("Maximum Accuracy model")
+print(df.loc[df['SCORE'].idxmax()])
