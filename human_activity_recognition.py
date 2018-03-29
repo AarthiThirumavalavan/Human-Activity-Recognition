@@ -16,9 +16,19 @@ from keras.utils.np_utils import to_categorical
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn import metrics
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import MinMaxScaler
+
 #Reading the files
-train = shuffle(pd.read_csv("E:/Python Exercises/Human activity recognition/train.csv"))
-test = shuffle(pd.read_csv("E:/Python Exercises/Human activity recognition/test.csv"))
+train = shuffle(pd.read_csv("C:/Users/thirumav/Desktop/Python_exercises/Human activity recognition/train.csv"))
+test = shuffle(pd.read_csv("C:/Users/thirumav/Desktop/Python_exercises/Human activity recognition/test.csv"))
 #Assigning Label fields
 train_labels = train["Activity"]
 test_labels = test["Activity"]
@@ -40,53 +50,102 @@ test_label_O = pd.get_dummies(test_label)
 #Model building
 ###KERAS NEURAL NETWORK
 model = Sequential()
-# Dense(64) is a fully-connected layer with 64 hidden units.
-# in the first layer, you must specify the expected input data shape:
-# here, 20-dimensional vectors.
 model.add(Dense(64, activation='relu', input_dim=561))
 model.add(Dropout(0.5))#Dropout: used to set a fraction rate of input units to 0 at each update during training time which helps prevent overfitting
 model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(6, activation='softmax'))
-#SGD: Stochastic Gradient Descent Optimizer: an optimizer is one of the two arguments used to compile a keras model
-#lr: learning rate , decay: learning rate decay over each update, momentum: used to accelerate SGD, nesterov: Whether to apply Nesterov momentum
-#Nesterov momentum: type of momentum(momentum: used to obtain faster convergence)
 sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-#here loss=categorical crossentropy is used for multiclass problems
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd,
               metrics=['accuracy'])
 
 model.fit(train_data, train_label_O,
-          epochs=60,
+          epochs=150,
           batch_size=128)
 
 score_NN = model.evaluate(test_data, test_label_O, batch_size=128)
 print("Model score for Keras Neural Network:{:.3f}".format(score_NN[1]))
 
 ###K-NEAREST NEIGHBORS
-knn = KNeighborsClassifier(n_neighbors = 6)
+knn = KNeighborsClassifier(n_neighbors=20 , n_jobs=2 , weights='distance')
 knn.fit(train_data, train_label)
 score_knn = knn.score(test_data,test_label)
 print("Model score for K-Nearest Neighbors:{:.3f}".format(score_knn))
 
 ###SUPPORT VECTOR MACHINES
-from sklearn.model_selection import GridSearchCV
 #param_grid={'C':[0.1,1,10,100,1000],'gamma':[1,0.1,0.01,0.001,0.0001]}
 param_grid={'C':[0.1,1],'gamma':[1,0.1]}
-grid=GridSearchCV(SVC(kernel = "rbf"),param_grid, scoring="accuracy")
-grid.fit(train_data, train_label)
+scaling = MinMaxScaler(feature_range=(-1,1)).fit(train_data)
+X_train = scaling.transform(train_data)
+X_test = scaling.transform(test_data)
+grid=GridSearchCV(SVC(),param_grid,scoring="accuracy")
+grid.fit(X_train, train_label)
 print(grid.best_params_)
-grid_predictions = grid.predict(test_data)
+grid_predictions = grid.predict(test_data, test_label)
 score_SVM = metrics.accuracy_score(test_label, grid_predictions)
+print(classification_report(test_label, grid_predictions))
+print(metrics.accuracy_score(test_label, grid_predictions))
 
 ###DECISION TREE
 from sklearn.tree import DecisionTreeClassifier
-decision_tree = DecisionTreeClassifier().fit(train_data, train_label)
-print("Accuracy for Decision Tree: {:.3f}".format(decision_tree(test_data, test_label)))
+decision_tree = DecisionTreeClassifier()
+decision_tree.fit(train_data, train_label)
+score_decision = decision_tree.score(test_data,test_label)
+print("Accuracy for Decision Tree: {:.3f}".format(score_decision))
 
-###Gradient Boosted Decision Tree
-from sklearn.ensemble import GradientBoostingClassifier
+###GRADIENT BOOSTED DECISION TREE
 gb = GradientBoostingClassifier(learning_rate = 0.01, max_depth=2, random_state=0)
 gb.fit(train_data, train_label)
-print('Accuracy of GBDT classifier on test set: {:.2f}'.format(gb.score(test_data, test_label)))
+score_gbdt = gb.score(test_data,test_label)
+print('Accuracy of GBDT classifier on test set: {:.2f}'.format(score_gbdt))
+
+###RANDOM FORESTS
+randomforest = RandomForestRegressor(n_estimators = 10, max_depth = 6, min_samples_leaf = 10, n_jobs = 4)
+randomforest.fit(train_data, train_label)
+score_rf = randomforest.score(test_data, test_label)
+print('Accuracy of Random Forest classifier on test set: {:.2f}'.format(score_rf))
+
+###LOGISTIC REGRESSION
+logistic = LogisticRegression(C=1)
+logistic.fit(train_data, train_label)
+score_logistic = logistic.score(test_data, test_label)
+print('Accuracy of Logistic Regression on test set: {:.2f}'.format(score_logistic))
+
+###GAUSSIAN NAIVE BAYES CLASSIFIER
+gaussian_nb = GaussianNB()
+gaussian_nb.fit(train_data, train_label)
+score_gaussian_nb = gaussian_nb.score(test_data, test_label)
+print('Accuracy of Gaussian Naive Bayes on test set: {:.2f}'.format(score_gaussian_nb))
+
+###SINGLE LAYER PERCEPTRON
+score_single_MLP = []
+for units in ([1,10,25,100]):
+        single_MLP = MLPClassifier(hidden_layer_sizes=[units], solver='lbfgs', random_state=0)
+        single_MLP.fit(train_data, train_label)
+        score = single_MLP.score(test_data, test_label)
+        score_single_MLP.append(score)
+maxscore = max(score_single_MLP)
+print('Maximum accuracy of Single Layer Perceptron on test set: {:.3f}'.format(maxscore))
+        
+###MULTILAYER PERCEPTRON
+MLP = MLPClassifier(hidden_layer_sizes = [10, 100], solver='lbfgs',random_state = 0)
+MLP.fit(train_data, train_label)        
+score_MLP = MLP.score(test_data, test_label) 
+print('Accuracy of Multiple Layer Perceptron on test set: {:.2f}'.format(score_MLP))
+
+###CONSOLIDATED REPORT
+consolidated_score = [{'ALGORITHM': 'Keras Neural Network', 'SCORE': score_NN[1]},
+         {'ALGORITHM': 'Multilayer Perceptron', 'SCORE': score_MLP},
+         {'ALGORITHM': 'Decision Tree', 'SCORE': score_decision },
+         {'ALGORITHM': 'Gaussian Naive Bayes', 'SCORE': score_gaussian_nb },
+         {'ALGORITHM': 'Gradient Boosted Decision tree', 'SCORE': score_gbdt },
+         {'ALGORITHM': 'K Nearest Neighbor', 'SCORE': score_knn },
+         {'ALGORITHM': 'Logistic Regression', 'SCORE': score_logistic },
+         {'ALGORITHM': 'Random Forests', 'SCORE': score_rf },
+         {'ALGORITHM': 'Single MLP', 'SCORE': maxscore },
+         {'ALGORITHM': 'SVM', 'SCORE': score_SVM}]
+df = pd.DataFrame(consolidated_score)
+print(df)
+df['SCORE'].idxmax()
+df.loc[df['SCORE'].idxmax()]
